@@ -1,5 +1,5 @@
 #pragma once
 
-#include "lua.h"
+#include <lualib.h>
 
 void register_library(lua_State* state);
