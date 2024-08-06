@@ -1,9 +1,6 @@
 #include "lib.h"
 
-#include <iostream>
 #include <stdio.h>
-
-#include "print.h"
 
 #define wanted_arg_count(n) \
 if (n > 0 && lua_gettop(thread) < n) [[unlikely]] { \
@@ -12,24 +9,17 @@ if (n > 0 && lua_gettop(thread) < n) [[unlikely]] { \
 	return 0; \
 }
 
-int print(lua_State* thread) {
-	int arg_count = lua_gettop(thread);
-	for (int arg = 1; arg <= arg_count; arg++) {
-		std::string str = bettertostring(thread, arg);
-		if (arg == arg_count) [[likely]] {
-			std::cout << str << std::endl;
-		} else {
-			std::cout << str << ' ';
-		}
-	}
+int test(lua_State* thread) {
+	wanted_arg_count(0);
+	printf("Working\n");
 	return 0;
 }
 
 #define r(name) {#name, name}
 constexpr luaL_Reg library[] = {
-	r(print),
+	r(test),
 	{NULL, NULL}
 };
 void register_library(lua_State* state) {
-	luaL_register(state, "_G", library);
+	luaL_register(state, "template", library);
 }

@@ -21,7 +21,7 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{46D5E466-FF1C-4D93-9D58-94A2A9B78E00}</ProjectGuid>
+    <ProjectGuid>{b9ffa761-5d13-4e53-b724-46b53dfa6bfc}</ProjectGuid>
     <RootNamespace>runluautemplate</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
@@ -159,7 +159,6 @@ del $(OutDir)$(TargetName).exp</Command>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="lib.h" />
-    <ClInclude Include="print.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
