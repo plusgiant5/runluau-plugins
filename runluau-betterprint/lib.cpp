@@ -3,7 +3,7 @@
 #include <iostream>
 #include <stdio.h>
 
-#include "print.h"
+#include "print.hpp"
 
 #define wanted_arg_count(n) \
 if (n > 0 && lua_gettop(thread) < n) [[unlikely]] { \

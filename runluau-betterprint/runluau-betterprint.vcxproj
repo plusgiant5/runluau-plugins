@@ -159,7 +159,7 @@ del $(OutDir)$(TargetName).exp</Command>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="lib.h" />
-    <ClInclude Include="print.h" />
+    <ClInclude Include="print.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
