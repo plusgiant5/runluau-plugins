@@ -1,6 +1,4 @@
-#include "lib.h"
-
-#include <stdio.h>
+#include "pch.h"
 
 #define wanted_arg_count(n) \
 if (n > 0 && lua_gettop(thread) < n) [[unlikely]] { \
@@ -9,17 +7,16 @@ if (n > 0 && lua_gettop(thread) < n) [[unlikely]] { \
 	return 0; \
 }
 
-int test(lua_State* thread) {
-	wanted_arg_count(0);
+static int test(lua_State* L) {
 	printf("Working\n");
 	return 0;
 }
 
-#define r(name) {#name, name}
+#define reg(name) {#name, name}
 constexpr luaL_Reg library[] = {
-	r(test),
+	reg(test),
 	{NULL, NULL}
 };
-void register_library(lua_State* state) {
-	luaL_register(state, "template", library);
+extern "C" __declspec(dllexport) void register_library(lua_State* thread) {
+	luaL_register(thread, "template", library);
 }

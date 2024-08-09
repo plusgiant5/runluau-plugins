@@ -1,7 +1,4 @@
-#include "lib.h"
-
-#include <iostream>
-#include <stdio.h>
+#include "pch.h"
 
 #include "print.hpp"
 
@@ -25,11 +22,11 @@ int print(lua_State* thread) {
 	return 0;
 }
 
-#define r(name) {#name, name}
+#define reg(name) {#name, name}
 constexpr luaL_Reg library[] = {
-	r(print),
+	reg(print),
 	{NULL, NULL}
 };
-void register_library(lua_State* state) {
-	luaL_register(state, "_G", library);
+extern "C" __declspec(dllexport) void register_library(lua_State* thread) {
+	luaL_register(thread, "_G", library);
 }

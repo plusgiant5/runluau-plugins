@@ -1,8 +1,6 @@
 #pragma once
 
-#include <sstream>
-#include <string>
-#include <unordered_set>
+#include "pch.h"
 
 #include <lualib.h>
 
@@ -20,8 +18,8 @@
 #define BOOLEAN_COLOR std::string(YELLOW)
 #define NUMBER_COLOR std::string(GREEN)
 #define STRING_COLOR std::string(CYAN)
-#define TABLE_COLOR std::string(BLACK)
 #define FUNCTION_COLOR std::string(RED)
+#define TABLE_COLOR std::string(BLACK)
 
 bool is_valid_name(std::string name) {
 	size_t length = name.size();
@@ -33,21 +31,21 @@ bool is_valid_name(std::string name) {
 	// Thanks for not having `...`
 	case '_':
 	case 'q': case 'w': case 'e': case 'r': case 't': case 'y': case 'u': case 'i': case 'o': case 'p':
-	  case 'a': case 's': case 'd': case 'f': case 'g': case 'h': case 'j': case 'k': case 'l':
-		 case 'z': case 'x': case 'c': case 'v': case 'b': case 'n': case 'm':
+	case 'a': case 's': case 'd': case 'f': case 'g': case 'h': case 'j': case 'k': case 'l':
+	case 'z': case 'x': case 'c': case 'v': case 'b': case 'n': case 'm':
 	case 'Q': case 'W': case 'E': case 'R': case 'T': case 'Y': case 'U': case 'I': case 'O': case 'P':
-	  case 'A': case 'S': case 'D': case 'F': case 'G': case 'H': case 'J': case 'K': case 'L':
-		 case 'Z': case 'X': case 'C': case 'V': case 'B': case 'N': case 'M':
+	case 'A': case 'S': case 'D': case 'F': case 'G': case 'H': case 'J': case 'K': case 'L':
+	case 'Z': case 'X': case 'C': case 'V': case 'B': case 'N': case 'M':
 		for (size_t i = 1; i < length; i++) {
 			switch (data[i]) {
 			case '_':
-		 case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9': case '0':
+			case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9': case '0':
 			case 'q': case 'w': case 'e': case 'r': case 't': case 'y': case 'u': case 'i': case 'o': case 'p':
-			  case 'a': case 's': case 'd': case 'f': case 'g': case 'h': case 'j': case 'k': case 'l':
-				 case 'z': case 'x': case 'c': case 'v': case 'b': case 'n': case 'm':
+			case 'a': case 's': case 'd': case 'f': case 'g': case 'h': case 'j': case 'k': case 'l':
+			case 'z': case 'x': case 'c': case 'v': case 'b': case 'n': case 'm':
 			case 'Q': case 'W': case 'E': case 'R': case 'T': case 'Y': case 'U': case 'I': case 'O': case 'P':
-			  case 'A': case 'S': case 'D': case 'F': case 'G': case 'H': case 'J': case 'K': case 'L':
-				 case 'Z': case 'X': case 'C': case 'V': case 'B': case 'N': case 'M':
+			case 'A': case 'S': case 'D': case 'F': case 'G': case 'H': case 'J': case 'K': case 'L':
+			case 'Z': case 'X': case 'C': case 'V': case 'B': case 'N': case 'M':
 				[[likely]]
 				break;
 			default:
@@ -61,7 +59,7 @@ bool is_valid_name(std::string name) {
 }
 
 constexpr size_t MAX_DEPTH = 4;
-template<bool quotes_around_strings = false, bool colors = true> std::string bettertostring(lua_State* thread, int object_location, std::string indent = "", std::unordered_set<const void*> encountered_tables = {}) {
+template<bool quotes_around_strings = false, bool colors = true> std::string bettertostring(lua_State* thread, int object_location, std::string indent = "", std::unordered_set<const void*> encountered = {}, size_t depth = 0) {
 	int raw_type = lua_type(thread, object_location);
 	if (raw_type == -1) {
 		return "NULL";
@@ -85,33 +83,30 @@ template<bool quotes_around_strings = false, bool colors = true> std::string bet
 	}
 	case LUA_TTABLE:
 	{
-		const void* table_pointer = lua_topointer(thread, object_location);
-		if (encountered_tables.find(table_pointer) != encountered_tables.end()) {
-			if (colors) {
-				return TABLE_COLOR + "<cyclic reference>" + RESET;
-			} else {
-				return "<cyclic reference>";
-			}
-		}
-		if (indent.length() >= MAX_DEPTH) {
+		if (depth > MAX_DEPTH) {
 			if (colors) {
 				return TABLE_COLOR + "<max depth>" + RESET;
 			} else {
 				return "<max depth>";
 			}
 		}
-		encountered_tables.insert(table_pointer);
 		std::string new_indent = indent;
+		const void* table = lua_topointer(thread, object_location);
+		if (encountered.find(table) == encountered.end()) {
+			encountered.insert(table);
+		} else {
+			if (colors) {
+				return TABLE_COLOR + "<cyclic reference>" + RESET;
+			} else {
+				return "<cyclic reference>";
+			}
+		}
 		std::stringstream output;
-#define append_with_table_color(str) \
-if (colors) { \
-	output << TABLE_COLOR; \
-	output << str; \
-	output << RESET; \
-} else { \
-	output << str; \
-}
-		append_with_table_color('{');
+		if (colors)
+			output << TABLE_COLOR;
+		output << '{';
+		if (colors)
+			output << RESET;
 		int array_length = lua_objlen(thread, object_location);
 		bool multi_line = false;
 		if (array_length == 0) [[unlikely]] {
@@ -136,13 +131,21 @@ if (colors) { \
 		for (int index = 0; index = lua_rawiter(thread, object_location, index), index >= 0;) {
 			empty = false;
 			if (index <= array_length) [[unlikely]] {
-				output << bettertostring<true>(thread, -1, new_indent, encountered_tables);
+				output << bettertostring<true>(thread, -1, new_indent, encountered, depth + 1);
 				if (index == array_length) [[unlikely]] {
 					if (multi_line) {
-						append_with_table_color(", ");
+						if (colors)
+							output << TABLE_COLOR;
+						output << ", ";
+						if (colors)
+							output << RESET;
 					}
 				} else {
-					append_with_table_color(", ");
+					if (colors)
+						output << TABLE_COLOR;
+					output << ", ";
+					if (colors)
+						output << RESET;
 				}
 			} else {
 				output << '\n';
@@ -155,26 +158,45 @@ if (colors) { \
 					std::string key = std::string(key_content, key_length);
 					if (is_valid_name(key)) [[likely]] {
 						output << key;
-						append_with_table_color(" = ");
+						output << " = ";
 						did_name_key = true;
 					}
 				}
 				if (!did_name_key) [[unlikely]] {
-					append_with_table_color('[');
-					output << bettertostring<true>(thread, -2, new_indent, encountered_tables);
-					append_with_table_color("] = ");
+					if (colors)
+						output << TABLE_COLOR;
+					output << '[';
+					if (colors)
+						output << RESET;
+					output << bettertostring<true>(thread, -2, new_indent, encountered, depth + 1);
+					if (colors)
+						output << TABLE_COLOR;
+					output << "] = ";
+					if (colors)
+						output << RESET;
 				}
-				output << bettertostring<true>(thread, -1, new_indent, encountered_tables);
-				append_with_table_color(';');
+				output << bettertostring<true>(thread, -1, new_indent, encountered, depth + 1);
+				if (colors)
+					output << TABLE_COLOR;
+				output << ";";
+				if (colors)
+					output << RESET;
 			}
 			lua_pop(thread, 2);
 		}
 		if (empty || !multi_line) [[unlikely]] {
-			append_with_table_color('}');
+			if (colors)
+				output << TABLE_COLOR;
+			output << '}';
+			if (colors)
+				output << RESET;
 			return output.str();
 		} else {
-			output << "\n" + indent;
-			append_with_table_color('}');
+			if (colors)
+				output << TABLE_COLOR;
+			output << "\n" + indent + "}";
+			if (colors)
+				output << RESET;
 			return output.str();
 		}
 	}

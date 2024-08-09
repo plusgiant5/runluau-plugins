@@ -1,8 +1,4 @@
-#include "lib.h"
-
-#include <stdio.h>
-
-#include "Luau/Compiler.h"
+#include "pch.h"
 
 #define wanted_arg_count(n) \
 if (n > 0 && lua_gettop(thread) < n) [[unlikely]] { \
@@ -40,15 +36,20 @@ int compile(lua_State* thread) {
 		}
 	}
 	std::string bytecode = Luau::compile(std::string(source_c_str, source_length), options, {});
+	if (bytecode.data()[0] == '\0') {
+		lua_pushlstring(thread, bytecode.data() + 1, bytecode.size() - 1);
+		lua_error(thread);
+		return 0;
+	}
 	lua_pushlstring(thread, bytecode.data(), bytecode.size());
 	return 1;
 }
 
-#define r(name) {#name, name}
+#define reg(name) {#name, name}
 constexpr luaL_Reg library[] = {
-	r(compile),
+	reg(compile),
 	{NULL, NULL}
 };
-void register_library(lua_State* state) {
-	luaL_register(state, "luau", library);
+extern "C" __declspec(dllexport) void register_library(lua_State* thread) {
+	luaL_register(thread, "luau", library);
 }
