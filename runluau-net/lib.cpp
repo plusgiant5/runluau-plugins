@@ -12,9 +12,23 @@ static int test(lua_State* L) {
     return 0;
 }
 
+static int wait(lua_State* L) {
+    wanted_arg_count(1);
+    
+    double seconds = luaL_checknumber(L, 1);
+    if (seconds < 0) {
+        return luaL_error(L, "wait time must be non-negative");
+    }
+
+    std::this_thread::sleep_for(std::chrono::duration<double>(seconds));
+    
+    return 0;
+}
+
 #define reg(name) {#name, name}
 constexpr luaL_Reg library[] = {
     reg(test),
+    reg(wait),  
     {NULL, NULL}
 };
 
