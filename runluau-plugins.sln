@@ -11,6 +11,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "runluau-luau", "runluau-lua
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "runluau-betterprint", "runluau-betterprint\runluau-betterprint.vcxproj", "{286A31B2-F66E-42F6-A2EA-3D33E6BAC454}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "runluau-task", "runluau-task\runluau-task.vcxproj", "{AB5D1AD7-BD38-47FE-8FEA-396213C7B0C2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -51,6 +53,14 @@ Global
 		{286A31B2-F66E-42F6-A2EA-3D33E6BAC454}.Release|x64.Build.0 = Release|x64
 		{286A31B2-F66E-42F6-A2EA-3D33E6BAC454}.Release|x86.ActiveCfg = Release|Win32
 		{286A31B2-F66E-42F6-A2EA-3D33E6BAC454}.Release|x86.Build.0 = Release|Win32
+		{AB5D1AD7-BD38-47FE-8FEA-396213C7B0C2}.Debug|x64.ActiveCfg = Debug|x64
+		{AB5D1AD7-BD38-47FE-8FEA-396213C7B0C2}.Debug|x64.Build.0 = Debug|x64
+		{AB5D1AD7-BD38-47FE-8FEA-396213C7B0C2}.Debug|x86.ActiveCfg = Debug|Win32
+		{AB5D1AD7-BD38-47FE-8FEA-396213C7B0C2}.Debug|x86.Build.0 = Debug|Win32
+		{AB5D1AD7-BD38-47FE-8FEA-396213C7B0C2}.Release|x64.ActiveCfg = Release|x64
+		{AB5D1AD7-BD38-47FE-8FEA-396213C7B0C2}.Release|x64.Build.0 = Release|x64
+		{AB5D1AD7-BD38-47FE-8FEA-396213C7B0C2}.Release|x86.ActiveCfg = Release|Win32
+		{AB5D1AD7-BD38-47FE-8FEA-396213C7B0C2}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

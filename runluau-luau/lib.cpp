@@ -1,12 +1,5 @@
 #include "pch.h"
 
-#define wanted_arg_count(n) \
-if (n > 0 && lua_gettop(thread) < n) [[unlikely]] { \
-	lua_pushfstring(thread, __FUNCTION__" expects at least " #n " arguments, received %d", lua_gettop(thread)); \
-	lua_error(thread); \
-	return 0; \
-}
-
 int compile(lua_State* thread) {
 	wanted_arg_count(1);
 	size_t source_length;

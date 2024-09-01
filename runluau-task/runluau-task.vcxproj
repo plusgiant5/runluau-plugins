@@ -21,7 +21,7 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{b0a73a0b-5986-449a-93e2-bcb5b8b7d2b0}</ProjectGuid>
+    <ProjectGuid>{AB5D1AD7-BD38-47FE-8FEA-396213C7B0C2}</ProjectGuid>
     <RootNamespace>runluautemplate</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>

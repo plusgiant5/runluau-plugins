@@ -8,4 +8,4 @@
 #include <filesystem>
 namespace fs = std::filesystem;
 
-#include "lualib.h"
+#include <luau.h>

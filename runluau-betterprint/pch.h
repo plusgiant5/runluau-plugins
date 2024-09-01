@@ -8,4 +8,5 @@
 #include <string>
 #include <unordered_set>
 
-#include "lualib.h"
+#include <colors.h>
+#include <luau.h>
