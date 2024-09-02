@@ -7,8 +7,7 @@ void precise_sleep(double time_in_seconds) {
 		printf("Failed to CreateWaitableTimer: %d\n", error);
 		exit(error);
 	}
-	LARGE_INTEGER due_time;
-	due_time.QuadPart = -static_cast<LONGLONG>(time_in_seconds * 10000000.0);
+	LARGE_INTEGER due_time = { .QuadPart = -static_cast<LONGLONG>(time_in_seconds * 10000000.0) };
 	if (!SetWaitableTimer(timer, &due_time, 0, nullptr, nullptr, FALSE)) {
 		DWORD error = GetLastError();
 		printf("Failed to SetWaitableTimer: %d\n", error);
@@ -20,15 +19,17 @@ void precise_sleep(double time_in_seconds) {
 }
 
 void wait_thread(lua_State* thread, HANDLE yield_ready_event, void* ud) {
-	double time = max(luaL_optnumber(thread, 1, 1/1000), 1/1000);
+	double time = max(luaL_optnumber(thread, 1, 1/SCHEDULER_RATE), 1/ SCHEDULER_RATE);
 	signal_yield_ready(yield_ready_event);
 	LARGE_INTEGER frequency, start, end;
 	QueryPerformanceFrequency(&frequency);
 	QueryPerformanceCounter(&start);
 	precise_sleep(time);
 	QueryPerformanceCounter(&end);
-	lua_pushnumber(thread, static_cast<double>(end.QuadPart - start.QuadPart) / frequency.QuadPart);
-	luau::add_thread_to_resume_queue(thread, nullptr, 1);
+	double delta_time = static_cast<double>(end.QuadPart - start.QuadPart) / frequency.QuadPart;
+	luau::add_thread_to_resume_queue(thread, nullptr, 1, [thread, delta_time](){
+		lua_pushnumber(thread, delta_time);
+	});
 }
 int wait(lua_State* thread) {
 	create_windows_thread_for_luau(thread, wait_thread);
@@ -47,7 +48,7 @@ int spawn(lua_State* thread) {
 	}
 	lua_xmove(thread, new_thread, arg_count);
 	lua_pop(thread, arg_count + 1);
-	luau::resume_and_handle_status(new_thread, thread, arg_count);
+	luau::resume_and_handle_status(new_thread, thread, arg_count, [&](){});
 	lua_pushthread(new_thread);
 	lua_xmove(new_thread, thread, 1);
 	return 1;
@@ -73,7 +74,7 @@ int defer(lua_State* thread) {
 
 void delay_thread(lua_State* thread, HANDLE yield_ready_event, void* ud) {
 	lua_State* from = (lua_State*)ud;
-	double time = max(luaL_optnumber(thread, 1, 1/1000), 1/1000);
+	double time = max(luaL_optnumber(thread, 1, 1/SCHEDULER_RATE), 1/SCHEDULER_RATE);
 	signal_yield_ready(yield_ready_event);
 	precise_sleep(time);
 	luau::add_thread_to_resume_queue(thread, from, lua_gettop(thread) - 2);
@@ -88,11 +89,8 @@ int delay(lua_State* thread) {
 	}
 	lua_xmove(thread, new_thread, arg_count);
 	create_windows_thread_for_luau(new_thread, delay_thread, thread);
-	printf("T:%d\n", lua_gettop(new_thread));
 	lua_pushthread(new_thread);
-	printf("T:%d\n", lua_gettop(new_thread));
 	lua_xmove(new_thread, thread, 1);
-	printf("T:%d\n", lua_gettop(new_thread));
 	return 1;
 }
 
