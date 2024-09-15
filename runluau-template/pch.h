@@ -3,4 +3,4 @@
 #include <stdio.h>
 #include <Windows.h>
 
-#include <luau.h>
+#include "luau.h"

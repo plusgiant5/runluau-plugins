@@ -16,18 +16,20 @@ void precise_sleep(double time_in_seconds) {
 	}
 	WaitForSingleObject(timer, INFINITE);
 	CloseHandle(timer);
+	//Sleep(static_cast<DWORD>(time_in_seconds * 1000));
 }
 
-void wait_thread(lua_State* thread, HANDLE yield_ready_event, void* ud) {
-	double time = max(luaL_optnumber(thread, 1, 1/SCHEDULER_RATE), 1/ SCHEDULER_RATE);
+void wait_thread(lua_State* thread, yield_ready_event_t yield_ready_event, void* ud) {
+	double time = max(luaL_optnumber(thread, 1, MIN_WAIT), MIN_WAIT);
 	signal_yield_ready(yield_ready_event);
-	LARGE_INTEGER frequency, start, end;
-	QueryPerformanceFrequency(&frequency);
+	LARGE_INTEGER start;
 	QueryPerformanceCounter(&start);
 	precise_sleep(time);
-	QueryPerformanceCounter(&end);
-	double delta_time = static_cast<double>(end.QuadPart - start.QuadPart) / frequency.QuadPart;
-	luau::add_thread_to_resume_queue(thread, nullptr, 1, [thread, delta_time](){
+	luau::add_thread_to_resume_queue(thread, NULL, 1, [thread, start]() {
+		LARGE_INTEGER frequency, end;
+		QueryPerformanceFrequency(&frequency);
+		QueryPerformanceCounter(&end);
+		double delta_time = static_cast<double>(end.QuadPart - start.QuadPart) / frequency.QuadPart;
 		lua_pushnumber(thread, delta_time);
 	});
 }
@@ -48,7 +50,7 @@ int spawn(lua_State* thread) {
 	}
 	lua_xmove(thread, new_thread, arg_count);
 	lua_pop(thread, arg_count + 1);
-	luau::resume_and_handle_status(new_thread, thread, arg_count, [&](){});
+	luau::resume_and_handle_status(new_thread, nullptr, arg_count);
 	lua_pushthread(new_thread);
 	lua_xmove(new_thread, thread, 1);
 	return 1;
@@ -66,18 +68,18 @@ int defer(lua_State* thread) {
 	}
 	lua_xmove(thread, new_thread, arg_count);
 	lua_pop(thread, arg_count + 1);
-	luau::add_thread_to_resume_queue(new_thread, thread, arg_count);
+	luau::add_thread_to_resume_queue(new_thread, nullptr, arg_count);
 	lua_pushthread(new_thread);
 	lua_xmove(new_thread, thread, 1);
 	return 1;
 }
 
-void delay_thread(lua_State* thread, HANDLE yield_ready_event, void* ud) {
+void delay_thread(lua_State* thread, yield_ready_event_t yield_ready_event, void* ud) {
 	lua_State* from = (lua_State*)ud;
-	double time = max(luaL_optnumber(thread, 1, 1/SCHEDULER_RATE), 1/SCHEDULER_RATE);
+	double time = max(luaL_optnumber(thread, 1, MIN_WAIT), MIN_WAIT);
 	signal_yield_ready(yield_ready_event);
 	precise_sleep(time);
-	luau::add_thread_to_resume_queue(thread, from, lua_gettop(thread) - 2);
+	luau::add_thread_to_resume_queue(thread, nullptr, lua_gettop(thread) - 2);
 }
 int delay(lua_State* thread) {
 	wanted_arg_count(2);

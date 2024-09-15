@@ -1,6 +1,6 @@
 #include "pch.h"
 
-int readfile(lua_State * thread) {
+int read_file(lua_State* thread) {
 	wanted_arg_count(1);
 	size_t length;
 	const char* path_c_str = luaL_checklstring(thread, 1, &length);
@@ -18,7 +18,7 @@ int readfile(lua_State * thread) {
 	return 1;
 }
 
-int writefile(lua_State * thread) {
+int write_file(lua_State* thread) {
 	wanted_arg_count(2);
 	size_t path_length;
 	const char* path_c_str = luaL_checklstring(thread, 1, &path_length);
@@ -36,7 +36,7 @@ int writefile(lua_State * thread) {
 	return 0;
 }
 
-int appendfile(lua_State * thread) {
+int append_file(lua_State* thread) {
 	wanted_arg_count(2);
 	size_t path_length;
 	const char* path_c_str = luaL_checklstring(thread, 1, &path_length);
@@ -54,25 +54,25 @@ int appendfile(lua_State * thread) {
 	return 0;
 }
 
-int exists(lua_State * thread) {
+int exists(lua_State* thread) {
 	wanted_arg_count(1);
 	lua_pushboolean(thread, fs::exists(fs::path(luaL_checkstring(thread, 1))));
 	return 1;
 }
 
-int isfile(lua_State * thread) {
+int is_file(lua_State* thread) {
 	wanted_arg_count(1);
 	lua_pushboolean(thread, fs::is_regular_file(fs::path(luaL_checkstring(thread, 1))));
 	return 1;
 }
 
-int isfolder(lua_State * thread) {
+int is_folder(lua_State* thread) {
 	wanted_arg_count(1);
 	lua_pushboolean(thread, fs::is_directory(fs::path(luaL_checkstring(thread, 1))));
 	return 1;
 }
 
-int listfiles(lua_State * thread) {
+int list(lua_State* thread) {
 	wanted_arg_count(1);
 	fs::path path(luaL_checkstring(thread, 1));
 	if (!fs::is_directory(path)) [[unlikely]] {
@@ -85,17 +85,17 @@ int listfiles(lua_State * thread) {
 		return 0;
 	}
 	lua_newtable(thread);
-	double current = 0;
+	int current = 0;
 	for (const auto& file : fs::directory_iterator(path)) {
 		std::string filename = file.path().filename().string();
-		lua_pushnumber(thread, ++current);
+		lua_pushinteger(thread, ++current);
 		lua_pushlstring(thread, filename.data(), filename.size());
 		lua_settable(thread, -3);
 	}
 	return 1;
 }
 
-int makefolder(lua_State * thread) {
+int new_folder(lua_State* thread) {
 	wanted_arg_count(1);
 	size_t path_length;
 	const char* path_c_str = luaL_checklstring(thread, 1, &path_length);
@@ -108,7 +108,7 @@ int makefolder(lua_State * thread) {
 	return 0;
 }
 
-int delfile(lua_State * thread) {
+int delete_file(lua_State* thread) {
 	wanted_arg_count(1);
 	size_t path_length;
 	const char* path_c_str = luaL_checklstring(thread, 1, &path_length);
@@ -121,7 +121,7 @@ int delfile(lua_State * thread) {
 	return 0;
 }
 
-int delfolder(lua_State * thread) {
+int delete_folder(lua_State* thread) {
 	wanted_arg_count(1);
 	size_t path_length;
 	const char* path_c_str = luaL_checklstring(thread, 1, &path_length);
@@ -136,15 +136,15 @@ int delfolder(lua_State * thread) {
 
 #define reg(name) {#name, name}
 constexpr luaL_Reg library[] = {
-	reg(readfile),
-	reg(writefile),
+	reg(read_file),
+	reg(write_file),
 	reg(exists),
-	reg(isfile),
-	reg(isfolder),
-	reg(listfiles),
-	reg(makefolder),
-	reg(delfile),
-	reg(delfolder),
+	reg(is_file),
+	reg(is_folder),
+	reg(list),
+	reg(new_folder),
+	reg(delete_file),
+	reg(delete_folder),
 	{NULL, NULL}
 };
 extern "C" __declspec(dllexport) void register_library(lua_State* thread) {
