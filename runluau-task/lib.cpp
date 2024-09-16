@@ -16,7 +16,6 @@ void precise_sleep(double time_in_seconds) {
 	}
 	WaitForSingleObject(timer, INFINITE);
 	CloseHandle(timer);
-	//Sleep(static_cast<DWORD>(time_in_seconds * 1000));
 }
 
 void wait_thread(lua_State* thread, yield_ready_event_t yield_ready_event, void* ud) {
@@ -69,17 +68,25 @@ int defer(lua_State* thread) {
 	lua_xmove(thread, new_thread, arg_count);
 	lua_pop(thread, arg_count + 1);
 	luau::add_thread_to_resume_queue(new_thread, nullptr, arg_count);
-	lua_pushthread(new_thread);
-	lua_xmove(new_thread, thread, 1);
 	return 1;
 }
 
+std::unordered_map<lua_State*, int> ref_for_thread;
+std::mutex ref_for_thread_mutex;
 void delay_thread(lua_State* thread, yield_ready_event_t yield_ready_event, void* ud) {
 	lua_State* from = (lua_State*)ud;
 	double time = max(luaL_optnumber(thread, 1, MIN_WAIT), MIN_WAIT);
 	signal_yield_ready(yield_ready_event);
 	precise_sleep(time);
-	luau::add_thread_to_resume_queue(thread, nullptr, lua_gettop(thread) - 2);
+	std::lock_guard<std::mutex> lock(ref_for_thread_mutex);
+	if (ref_for_thread.find(thread) == ref_for_thread.end()) {
+		printf("Failed to find ref for thread\n");
+		exit(ERROR_INTERNAL_ERROR);
+	}
+	int ref = ref_for_thread.at(thread);
+	luau::add_thread_to_resume_queue(thread, (lua_State*)ud, lua_gettop(thread) - 2, [ud, ref]{
+		lua_unref((lua_State*)ud, ref);
+	});
 }
 int delay(lua_State* thread) {
 	wanted_arg_count(2);
@@ -91,8 +98,9 @@ int delay(lua_State* thread) {
 	}
 	lua_xmove(thread, new_thread, arg_count);
 	create_windows_thread_for_luau(new_thread, delay_thread, thread);
-	lua_pushthread(new_thread);
-	lua_xmove(new_thread, thread, 1);
+	int ref = lua_ref(thread, -1);
+	std::lock_guard<std::mutex> lock(ref_for_thread_mutex);
+	ref_for_thread.insert({new_thread, ref});
 	return 1;
 }
 

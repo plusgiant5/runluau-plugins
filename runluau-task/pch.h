@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <Windows.h>
+#include <mutex>
 
 #include "luau.h"
 
