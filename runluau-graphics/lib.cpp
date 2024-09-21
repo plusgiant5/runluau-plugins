@@ -63,6 +63,16 @@ window_data* add_window(lua_State* thread, HWND hwnd, GLsizei width, GLsizei hei
 	wglMakeCurrent(data->hdc, data->hglrc);
 	return data;
 }
+void remove_window(window_data* data) {
+	std::lock_guard<std::recursive_mutex> lock(luau::luau_operation_mutex);
+	window_frame_buffer_to_id.erase(data->frame_buffer);
+	window_hwnd_to_data.erase(data->hwnd);
+	window_id_to_data.erase(data->id);
+	wglMakeCurrent(NULL, NULL);
+	wglDeleteContext(data->hglrc);
+	delete data->events;
+	delete data;
+}
 
 window_data* get_window_data(HWND hwnd) {
 	if (window_hwnd_to_data.find(hwnd) == window_hwnd_to_data.end()) {
@@ -70,6 +80,21 @@ window_data* get_window_data(HWND hwnd) {
 		exit(ERROR_INTERNAL_ERROR);
 	}
 	return window_hwnd_to_data.at(hwnd);
+}
+window_data* to_window_data(lua_State* thread, int arg) {
+	void* buffer = luaL_checkbuffer(thread, 1, NULL);
+	if (window_frame_buffer_to_id.find(buffer) == window_frame_buffer_to_id.end()) {
+		lua_pushstring(thread, "Invalid frame buffer");
+		lua_error(thread);
+		return 0;
+	}
+	unsigned int id = window_frame_buffer_to_id.at(buffer);
+	if (window_id_to_data.find(id) == window_id_to_data.end(id)) {
+		lua_pushfstring(thread, "Invalid window id %d", id);
+		lua_error(thread);
+		return 0;
+	}
+	return window_id_to_data.at(id);
 }
 extern "C" __declspec(dllexport) void add_window_event(HWND hwnd, window_event* event) {
 	get_window_data(hwnd)->events->push_back(event);
@@ -82,12 +107,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 	window_data* data = window_hwnd_to_data.at(hwnd);
 	switch (uMsg) {
 	case WM_CREATE:
-	//printf("Create\n");
-	{
 		return 0;
-	}
 	case WM_PAINT:
-		//printf("p");
 	{
 		static bool already_painting = false;
 		if (already_painting)
@@ -123,8 +144,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 		return 0;
 	}
 	case WM_DESTROY:
-		wglMakeCurrent(NULL, NULL);
-		wglDeleteContext(data->hglrc);
+		remove_window(data);
 		PostQuitMessage(0);
 		return 0;
 
@@ -187,20 +207,10 @@ int create_window(lua_State* thread) {
 	return lua_yield(thread, 1);
 }
 
-window_data* to_window_data(lua_State* thread, int arg) {
-	void* buffer = luaL_checkbuffer(thread, 1, NULL);
-	if (window_frame_buffer_to_id.find(buffer) == window_frame_buffer_to_id.end()) {
-		lua_pushstring(thread, "Invalid frame buffer");
-		lua_error(thread);
-		return 0;
-	}
-	unsigned int id = window_frame_buffer_to_id.at(buffer);
-	if (window_id_to_data.find(id) == window_id_to_data.end(id)) {
-		lua_pushfstring(thread, "Invalid window id %d", id);
-		lua_error(thread);
-		return 0;
-	}
-	return window_id_to_data.at(id);
+int window_exists(lua_State* thread) {
+	wanted_arg_count(1);
+	lua_pushboolean(thread, window_frame_buffer_to_id.find(luaL_checkbuffer(thread, 1, nullptr)) != window_frame_buffer_to_id.end() ? true : false);
+	return 1;
 }
 
 int get_window_events(lua_State* thread) {
@@ -253,17 +263,18 @@ int set_window_size(lua_State* thread) {
 		return 0;
 	}
 	RECT existing_win_rect = existing_info.rcWindow;
-	std::thread([hwnd = data->hwnd, width, height]{
+	std::thread([hwnd = data->hwnd, width, height] {
 		SetWindowSize(hwnd, width, height);
-	}).detach();
+		}).detach();
 	return 0;
 }
 
 #define reg(name) {#name, name}
 constexpr luaL_Reg library[] = {
 	reg(create_window),
-	reg(get_window_events),
+	reg(window_exists),
 	reg(render),
+	reg(get_window_events),
 	reg(set_window_size),
 	{NULL, NULL}
 };
