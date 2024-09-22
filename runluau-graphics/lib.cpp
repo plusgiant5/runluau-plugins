@@ -182,6 +182,7 @@ void create_window_thread(lua_State* thread, yield_ready_event_t yield_ready_eve
 	luau::add_thread_to_resume_queue(thread, nullptr, 1, [thread, buffer_size, data]() {
 		std::lock_guard<std::mutex> lock(globals_mutex);
 		lua_newbuffer(thread, buffer_size);
+		lua_ref(thread, -1);
 		size_t pushed_buffer_size;
 		void* buffer = luaL_checkbuffer(thread, -1, &pushed_buffer_size);
 		if (buffer_size != pushed_buffer_size) {
