@@ -13,4 +13,5 @@
 
 #include "luau.h"
 
-#include "graphics-base.h"
+#include "util.h"
+#include "window.h"
