@@ -27,9 +27,13 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 		return 0;
 	case WM_PAINT:
 	{
-		std::lock_guard<std::recursive_mutex> lock(luau::luau_operation_mutex);
-
-		const auto& data = expect_window_data(get_window_data(hwnd));
+		if (!luau::luau_operation_mutex.try_lock()) {
+			return 0;
+		}
+		luau::luau_operation_mutex.unlock();
+		if (!data->frame_buffer || !data->hdc || !data->hglrc) {
+			return 0;
+		}
 
 		RECT win_rect;
 		GetClientRect(data->hwnd, &win_rect);
@@ -159,11 +163,12 @@ void create_window_thread(lua_State* thread, yield_ready_event_t yield_ready_eve
 		return;
 	}
 
-	window_data* data = add_window(thread, hwnd, width, height);
+	window_data* data;
+	bool window_setup = false;
 
 	const size_t buffer_size = (size_t)width * (size_t)height * sizeof(uint32_t);
 	signal_yield_ready(yield_ready_event);
-	luau::add_thread_to_resume_queue(thread, nullptr, 1, [thread, buffer_size, data]() {
+	luau::add_thread_to_resume_queue(thread, nullptr, 1, [thread, buffer_size, hwnd, width, height, &data, &window_setup]() {
 		lua_newbuffer(thread, buffer_size);
 		lua_ref(thread, -1);
 		size_t pushed_buffer_size;
@@ -171,8 +176,12 @@ void create_window_thread(lua_State* thread, yield_ready_event_t yield_ready_eve
 		if (buffer_size != pushed_buffer_size) {
 			throw std::runtime_error("Catastrophically failed to push frame buffer");
 		}
+		window_data* data = add_window(thread, hwnd, width, height);
 		add_window_frame_buffer(data, buffer);
+		window_setup = true;
 	});
+
+	while (!window_setup);
 
 	ShowWindow(hwnd, SW_SHOW);
 	UpdateWindow(hwnd);

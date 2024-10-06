@@ -112,7 +112,7 @@ template<bool quotes_around_strings = false, bool colors = true> std::string bet
 		for (int index = 0; index = lua_rawiter(thread, object_location, index), index >= 0;) {
 			empty = false;
 			if (index <= array_length) [[unlikely]] {
-				output += bettertostring<true>(thread, -1, new_indent, encountered, depth + 1);
+				output += bettertostring<true, colors>(thread, -1, new_indent, encountered, depth + 1);
 				if (index == array_length) [[unlikely]] {
 					if (multi_line) {
 						if (colors)
@@ -153,14 +153,14 @@ template<bool quotes_around_strings = false, bool colors = true> std::string bet
 					output += '[';
 					if (colors)
 						output += RESET;
-					output += bettertostring<true>(thread, -2, new_indent, encountered, depth + 1);
+					output += bettertostring<true, colors>(thread, -2, new_indent, encountered, depth + 1);
 					if (colors)
 						output += TABLE_COLOR;
 					output += "] = ";
 					if (colors)
 						output += RESET;
 				}
-				output += bettertostring<true>(thread, -1, new_indent, encountered, depth + 1);
+				output += bettertostring<true, colors>(thread, -1, new_indent, encountered, depth + 1);
 				if (colors)
 					output += TABLE_COLOR;
 				output += ";";
@@ -220,6 +220,7 @@ template<bool quotes_around_strings = false, bool colors = true> std::string bet
 				return '"' + std::string(content, length) + '"';
 			}
 		}
+		__fallthrough;
 	default:
 	_default:
 		{
