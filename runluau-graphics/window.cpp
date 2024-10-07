@@ -6,50 +6,31 @@ const char* window_event_type_names[] = {
 	"input",
 };
 
-std::unordered_map<HWND, window_data*> window_hwnd_to_data;
 std::unordered_map<int, window_data*> window_id_to_data;
 std::unordered_map<void*, window_data*> window_frame_buffer_to_data;
 int current_window_id = 0;
 std::mutex globals_mutex;
-window_data* add_window(lua_State* thread, HWND hwnd, GLsizei width, GLsizei height) {
+window_data* add_window(lua_State* thread, GLsizei width, GLsizei height) {
 	std::lock_guard<std::mutex> lock(globals_mutex);
 	current_window_id++;
-	PIXELFORMATDESCRIPTOR pfd{
-		.nSize = sizeof(PIXELFORMATDESCRIPTOR),
-		.nVersion = 1,
-		.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
-		.iPixelType = PFD_TYPE_RGBA,
-		.cColorBits = 32,
-		.cDepthBits = 24,
-		.cStencilBits = 8,
-		.cAuxBuffers = 0,
-		.iLayerType = PFD_MAIN_PLANE,
-	};
 
 	auto data = new window_data({
 		.id = current_window_id,
-		.hwnd = hwnd,
 		.thread = thread,
 		.events = new std::list<window_event*>,
 
-		.hdc = GetDC(hwnd), .hglrc = nullptr,
+		.hdc = nullptr, .hglrc = nullptr,
 
 		.width = width, .height = height, .frame_buffer = nullptr, .render_ready = false,
 	});
-	window_hwnd_to_data.insert({hwnd, data});
+
 	window_id_to_data.insert({current_window_id, data});
-	int pfIndex = ChoosePixelFormat(data->hdc, &pfd);
-	SetPixelFormat(data->hdc, pfIndex, &pfd);
-	data->hglrc = wglCreateContext(data->hdc);
-	wglMakeCurrent(data->hdc, data->hglrc);
 	return data;
 }
 void remove_window(window_data* data) {
 	std::lock_guard<std::mutex> lock(globals_mutex);
-	window_hwnd_to_data.erase(data->hwnd);
 	window_id_to_data.erase(data->id);
 	window_frame_buffer_to_data.erase(data->frame_buffer);
-	wglMakeCurrent(NULL, NULL);
 	wglDeleteContext(data->hglrc);
 	delete data->events;
 	delete data;
@@ -61,10 +42,11 @@ void add_window_frame_buffer(window_data* data, void* frame_buffer) {
 }
 
 std::optional<window_data*> get_window_data(HWND hwnd) {
-	if (window_hwnd_to_data.find(hwnd) == window_hwnd_to_data.end()) {
+	window_data* data = (window_data*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+	if (!data) {
 		return std::nullopt;
 	}
-	return window_hwnd_to_data.at(hwnd);
+	return data;
 }
 std::optional<window_data*> get_window_data(int id) {
 	if (window_id_to_data.find(id) == window_id_to_data.end()) {

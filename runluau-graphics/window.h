@@ -37,7 +37,7 @@ struct window_data {
 	bool render_ready;
 };
 
-window_data* add_window(lua_State* thread, HWND hwnd, GLsizei width, GLsizei height);
+window_data* add_window(lua_State* thread, GLsizei width, GLsizei height);
 void remove_window(window_data* data);
 void add_window_frame_buffer(window_data* data, void* frame_buffer);
 

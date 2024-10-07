@@ -15,23 +15,51 @@ extern "C" __declspec(dllexport) void add_window_event(HWND hwnd, std::optional<
 	}
 }
 
-GLfloat current_scale;
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-	std::optional<window_data*> data_opt = get_window_data(hwnd);
-	if (!data_opt.has_value()) {
+	window_data* data = (window_data*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+
+	if (uMsg == WM_NCCREATE) {
+		CREATESTRUCT* cs = (CREATESTRUCT*)lParam;
+		data = (window_data*)(cs->lpCreateParams);
+		SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)data);
+	}
+
+	if (!data) {
 		return DefWindowProc(hwnd, uMsg, wParam, lParam);
 	}
-	window_data* data = data_opt.value();
 	switch (uMsg) {
 	case WM_CREATE:
 		return 0;
 	case WM_PAINT:
 	{
-		if (!luau::luau_operation_mutex.try_lock()) {
-			return 0;
+		PAINTSTRUCT ps;
+		HDC hdc = BeginPaint(data->hwnd, &ps);
+		
+		if (!data->hdc || !data->hglrc) {
+			PIXELFORMATDESCRIPTOR pfd{
+				.nSize = sizeof(PIXELFORMATDESCRIPTOR),
+				.nVersion = 1,
+				.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
+				.iPixelType = PFD_TYPE_RGBA,
+				.cColorBits = 32,
+				.cDepthBits = 24,
+				.cStencilBits = 8,
+				.cAuxBuffers = 0,
+				.iLayerType = PFD_MAIN_PLANE,
+			};
+			data->hdc = GetDC(hwnd);
+			SetPixelFormat(data->hdc, ChoosePixelFormat(data->hdc, &pfd), &pfd);
+			data->hglrc = wglCreateContext(data->hdc);
 		}
-		luau::luau_operation_mutex.unlock();
-		if (!data->frame_buffer || !data->hdc || !data->hglrc) {
+		if (!wglMakeCurrent(data->hdc, data->hglrc)) {
+			int err = GetLastError();
+			printf("Failed to `wglMakeCurrent`: %d\n", err);
+			exit(err);
+		}
+
+		if (!data->frame_buffer) {
+			wglMakeCurrent(NULL, NULL);
+			EndPaint(data->hwnd, &ps);
 			return 0;
 		}
 
@@ -40,24 +68,42 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 		GLsizei win_width = win_rect.right - win_rect.left;
 		GLsizei win_height = win_rect.bottom - win_rect.top;
 		GLfloat scale;
-		if (data->width / data->height > win_width / win_height) {
+		if ((float)data->width / data->height > (float)win_width / win_height) {
 			scale = (GLfloat)win_width / data->width;
 		} else {
 			scale = (GLfloat)win_height / data->height;
 		}
-		current_scale = scale;
 		GLsizei scaled_width = static_cast<GLsizei>(data->width * scale);
 		GLsizei scaled_height = static_cast<GLsizei>(data->height * scale);
-		glViewport((win_width - scaled_width) / 2, (win_height - scaled_height) / 2, scaled_width, scaled_height);
-		glPixelZoom(scale, scale);
+
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glOrtho(0.0, win_width, 0.0, win_height, -1.0, 1.0);
+
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+
+		glViewport(0, 0, win_width, win_height);
+
+		GLint raster_x = (win_width - scaled_width) / 2;
+		GLint raster_y = (win_height - scaled_height) / 2;
+
+		glRasterPos2i(raster_x, raster_y);
 
 		glClear(GL_COLOR_BUFFER_BIT);
-		glRasterPos2f(-1.0f, -1.0f);
 
+		glPixelZoom(scale, scale);
+
+		std::lock_guard<std::recursive_mutex> lock(luau::luau_operation_mutex);
 		glDrawPixels(data->width, data->height, GL_RGBA, GL_UNSIGNED_BYTE, (void*)data->frame_buffer);
+
 		SwapBuffers(data->hdc);
 
+		wglMakeCurrent(NULL, NULL);
+		EndPaint(data->hwnd, &ps);
+
 		return 0;
+
 	}
 	case WM_KEYDOWN:
 	{
@@ -131,6 +177,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 		remove_window(data);
 		PostQuitMessage(0);
 		return 0;
+	case WM_SIZE:
+		InvalidateRect(hwnd, NULL, TRUE);
+		return DefWindowProc(hwnd, uMsg, wParam, lParam);
 
 	default:
 		return DefWindowProc(hwnd, uMsg, wParam, lParam);
@@ -156,27 +205,30 @@ void create_window_thread(lua_State* thread, yield_ready_event_t yield_ready_eve
 	RECT win_rect = {0, 0, win_width, win_height};
 	AdjustWindowRectEx(&win_rect, WS_OVERLAPPEDWINDOW, FALSE, 0);
 	const wchar_t* title_w = str_to_wstr(title);
-	HWND hwnd = CreateWindowExW(0, wc.lpszClassName, title_w, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, win_rect.right - win_rect.left, win_rect.bottom - win_rect.top, NULL, NULL, wc.hInstance, nullptr);
+	window_data* data = add_window(thread, width, height);
+	HWND hwnd = CreateWindowExW(0, wc.lpszClassName, title_w, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, win_rect.right - win_rect.left, win_rect.bottom - win_rect.top, NULL, NULL, wc.hInstance, data);
 	delete[] title_w;
 
 	if (hwnd == NULL) {
-		return;
+		int err = GetLastError();
+		printf("Failed to `CreateWindowExW`: %d\n", err);
+		exit(err);
 	}
 
-	window_data* data;
+	data->hwnd = hwnd;
 	bool window_setup = false;
 
 	const size_t buffer_size = (size_t)width * (size_t)height * sizeof(uint32_t);
 	signal_yield_ready(yield_ready_event);
-	luau::add_thread_to_resume_queue(thread, nullptr, 1, [thread, buffer_size, hwnd, width, height, &data, &window_setup]() {
+	luau::add_thread_to_resume_queue(thread, nullptr, 1, [thread, buffer_size, hwnd, &data, &window_setup]() {
 		lua_newbuffer(thread, buffer_size);
 		lua_ref(thread, -1);
 		size_t pushed_buffer_size;
 		void* buffer = luaL_checkbuffer(thread, -1, &pushed_buffer_size);
 		if (buffer_size != pushed_buffer_size) {
-			throw std::runtime_error("Catastrophically failed to push frame buffer");
+			printf("Catastrophically failed to push frame buffer\n");
+			exit(ERROR_INTERNAL_ERROR);
 		}
-		window_data* data = add_window(thread, hwnd, width, height);
 		add_window_frame_buffer(data, buffer);
 		window_setup = true;
 	});
@@ -272,7 +324,7 @@ int set_window_size(lua_State* thread) {
 	RECT existing_win_rect = existing_info.rcWindow;
 	std::thread([hwnd = data->hwnd, width, height] {
 		SetWindowSize(hwnd, width, height);
-		}).detach();
+	}).detach();
 	return 0;
 }
 
