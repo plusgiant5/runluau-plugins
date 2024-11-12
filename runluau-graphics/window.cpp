@@ -4,6 +4,7 @@
 
 const char* window_event_type_names[] = {
 	"input",
+	"scroll",
 };
 
 std::unordered_map<int, window_data*> window_id_to_data;
@@ -22,6 +23,8 @@ window_data* add_window(lua_State* thread, GLsizei width, GLsizei height) {
 		.hdc = nullptr, .hglrc = nullptr,
 
 		.width = width, .height = height, .frame_buffer = nullptr, .render_ready = false,
+
+		.last_cursor_position = POINT(0, 0),
 	});
 
 	window_id_to_data.insert({current_window_id, data});
@@ -177,5 +180,10 @@ std::optional<window_event*> new_WE_INPUT(WPARAM input, bool down) {
 	window_event* event = new window_event{WE_INPUT};
 	event->data.WE_INPUT.down = down;
 	event->data.WE_INPUT.input = input_names.at(input);
+	return event;
+}
+std::optional<window_event*> new_WE_SCROLL(int delta) {
+	window_event* event = new window_event{WE_SCROLL};
+	event->data.WE_SCROLL.delta = delta;
 	return event;
 }

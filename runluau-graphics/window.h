@@ -9,6 +9,7 @@
 
 enum window_event_type {
 	WE_INPUT,
+	WE_SCROLL,
 };
 extern const char* window_event_type_names[];
 
@@ -19,6 +20,9 @@ struct window_event {
 			const char* input;
 			bool down;
 		} WE_INPUT;
+		struct {
+			int delta;
+		} WE_SCROLL;
 	} data;
 };
 
@@ -35,6 +39,8 @@ struct window_data {
 	GLsizei height;
 	uint32_t* frame_buffer;
 	bool render_ready;
+
+	POINT last_cursor_position;
 };
 
 window_data* add_window(lua_State* thread, GLsizei width, GLsizei height);
@@ -47,3 +53,4 @@ std::optional<window_data*> get_window_data(void* frame_buffer);
 window_data* expect_window_data(std::optional<window_data*> data);
 
 std::optional<window_event*> new_WE_INPUT(WPARAM input, bool down);
+std::optional<window_event*> new_WE_SCROLL(int delta);

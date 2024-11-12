@@ -102,6 +102,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 		wglMakeCurrent(NULL, NULL);
 		EndPaint(data->hwnd, &ps);
 
+		InvalidateRect(hwnd, nullptr, TRUE);
+
 		return 0;
 
 	}
@@ -171,6 +173,13 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 		} else if (GET_XBUTTON_WPARAM(wParam) == XBUTTON2) {
 			add_window_event(hwnd, new_WE_INPUT(VK_XBUTTON2, false));
 		}
+		return 0;
+	}
+	case WM_MOUSEWHEEL:
+	{
+		std::lock_guard<std::recursive_mutex> lock(luau::luau_operation_mutex);
+		int delta = GET_WHEEL_DELTA_WPARAM(wParam);
+		add_window_event(hwnd, new_WE_SCROLL(delta));
 		return 0;
 	}
 	case WM_DESTROY:
@@ -284,6 +293,15 @@ int get_window_events(lua_State* thread) {
 				}
 				break;
 			}
+			case WE_SCROLL:
+			{
+				auto data = event->data.WE_SCROLL;
+				{
+					lua_pushinteger(thread, data.delta);
+					lua_setfield(thread, -2, "delta");
+				}
+				break;
+			}
 			default: break;
 			}
 			lua_settable(thread, -3);
@@ -328,6 +346,39 @@ int set_window_size(lua_State* thread) {
 	return 0;
 }
 
+int get_cursor_position(lua_State* thread) {
+	window_data* data = to_window_data(thread, 1);
+
+	POINT point;
+	if (!GetCursorPos(&point)) {
+		lua_pushfstring(thread, "WinAPI error on GetCursorPos `%d`", GetLastError());
+		lua_error(thread);
+		return 0;
+	}
+	if (!ScreenToClient(data->hwnd, &point)) {
+		lua_pushfstring(thread, "WinAPI error on ScreenToClient `%d`", GetLastError());
+		lua_error(thread);
+		return 0;
+	}
+	RECT rect;
+	if (!GetClientRect(data->hwnd, &rect)) {
+		lua_pushfstring(thread, "WinAPI error on GetClientRect `%d`", GetLastError());
+		lua_error(thread);
+		return 0;
+	}
+	point.y = rect.bottom - point.y;
+
+	if (point.x < 0 || point.x >= data->width || point.y < 0 || point.y >= data->height) {
+		point = data->last_cursor_position;
+	} else {
+		data->last_cursor_position = point;
+	}
+	lua_pushinteger(thread, point.x);
+	lua_pushinteger(thread, point.y);
+
+	return 2;
+}
+
 #define reg(name) {#name, name}
 constexpr luaL_Reg library[] = {
 	reg(create_window),
@@ -335,6 +386,7 @@ constexpr luaL_Reg library[] = {
 	reg(render),
 	reg(get_window_events),
 	reg(set_window_size),
+	reg(get_cursor_position),
 	{NULL, NULL}
 };
 extern "C" __declspec(dllexport) void register_library(lua_State* thread) {
