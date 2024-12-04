@@ -38,7 +38,6 @@ struct window_data {
 	GLsizei width;
 	GLsizei height;
 	uint32_t* frame_buffer;
-	bool render_ready;
 
 	POINT last_cursor_position;
 };

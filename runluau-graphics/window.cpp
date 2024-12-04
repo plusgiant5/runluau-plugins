@@ -22,7 +22,7 @@ window_data* add_window(lua_State* thread, GLsizei width, GLsizei height) {
 
 		.hdc = nullptr, .hglrc = nullptr,
 
-		.width = width, .height = height, .frame_buffer = nullptr, .render_ready = false,
+		.width = width, .height = height, .frame_buffer = nullptr,
 
 		.last_cursor_position = POINT(0, 0),
 	});
