@@ -311,13 +311,6 @@ int get_window_events(lua_State* thread) {
 	return 1;
 }
 
-int render(lua_State* thread) {
-	wanted_arg_count(1);
-	window_data* data = to_window_data(thread, 1);
-	data->render_ready = true;
-	return 0;
-}
-
 void SetWindowSize(HWND hwnd, int width, int height) {
 	DWORD style = GetWindowLong(hwnd, GWL_STYLE);
 	DWORD style_ex = GetWindowLong(hwnd, GWL_EXSTYLE);
@@ -383,7 +376,6 @@ int get_cursor_position(lua_State* thread) {
 constexpr luaL_Reg library[] = {
 	reg(create_window),
 	reg(window_exists),
-	reg(render),
 	reg(get_window_events),
 	reg(set_window_size),
 	reg(get_cursor_position),
