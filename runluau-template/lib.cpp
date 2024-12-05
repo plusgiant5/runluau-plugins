@@ -10,6 +10,13 @@ constexpr luaL_Reg library[] = {
 	reg(test),
 	{NULL, NULL}
 };
-extern "C" __declspec(dllexport) void register_library(lua_State* thread) {
+
+extern "C"
+#ifdef _WIN32
+__declspec(dllexport)
+#else
+__attribute__((visibility("default")))
+#endif
+void register_library(lua_State* thread) {
 	luaL_register(thread, "template", library);
 }

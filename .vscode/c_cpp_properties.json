@@ -1,0 +1,21 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                // if it isn't here then skill issue L + ratio don't care change it yourself
+                "../runluau/shared/",
+                // shut up C++
+                "../runluau/Luau/Compiler/include",
+                "../runluau/Luau/Ast/include",
+                "../runluau/Luau/Common/include",
+                "../runluau/Luau/CodeGen/include"
+            ],
+            "defines": [],
+            "cStandard": "c17",
+            "cppStandard": "c++20",
+            "intelliSenseMode": "linux-clang-x64"
+        }
+    ],
+    "version": 4
+}
