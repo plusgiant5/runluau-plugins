@@ -6,7 +6,7 @@ int print(lua_State* thread) {
 	int arg_count = lua_gettop(thread);
 	for (int arg = 1; arg <= arg_count; arg++) {
 		std::string str = bettertostring(thread, arg);
-		if (arg == arg_count) [[likely]] {
+		if (arg == arg_count) {
 			std::cout << str << std::endl;
 			} else {
 			std::cout << str << ' ';
@@ -20,7 +20,7 @@ int warn(lua_State* thread) {
 	std::cout << YELLOW;
 	for (int arg = 1; arg <= arg_count; arg++) {
 		std::string str = bettertostring<false, false>(thread, arg);
-		if (arg == arg_count) [[likely]] {
+		if (arg == arg_count) {
 			std::cout << str << std::endl;
 			} else {
 			std::cout << str << ' ';

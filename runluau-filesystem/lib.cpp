@@ -6,7 +6,7 @@ int read_file(lua_State* thread) {
 	const char* path_c_str = luaL_checklstring(thread, 1, &length);
 	fs::path path(std::string(path_c_str, length));
 	std::ifstream file(path, std::ios::binary);
-	if (!file) [[unlikely]] {
+	if (!file) {
 		lua_pushfstring(thread, "Failed to read file: %s", std::strerror(errno));
 		lua_error(thread);
 		return 0;
@@ -26,7 +26,7 @@ int write_file(lua_State* thread) {
 	size_t content_length;
 	const char* content = luaL_checklstring(thread, 2, &content_length);
 	std::ofstream file(path, std::ios::binary);
-	if (!file) [[unlikely]] {
+	if (!file) {
 		lua_pushfstring(thread, "Failed to write file: %s", std::strerror(errno));
 		lua_error(thread);
 		return 0;
@@ -44,7 +44,7 @@ int append_file(lua_State* thread) {
 	size_t content_length;
 	const char* content = luaL_checklstring(thread, 2, &content_length);
 	std::ofstream file(path, std::ios::binary | std::ios::app);
-	if (!file) [[unlikely]] {
+	if (!file) {
 		lua_pushfstring(thread, "Failed to append file: %s", std::strerror(errno));
 		lua_error(thread);
 		return 0;
@@ -75,8 +75,8 @@ int is_folder(lua_State* thread) {
 int list(lua_State* thread) {
 	wanted_arg_count(1);
 	fs::path path(luaL_checkstring(thread, 1));
-	if (!fs::is_directory(path)) [[unlikely]] {
-		if (fs::exists(path)) [[unlikely]] {
+	if (!fs::is_directory(path)) {
+		if (fs::exists(path)) {
 			lua_pushstring(thread, "Failed to list files: Expected folder, found file");
 		} else {
 			lua_pushstring(thread, "Failed to list files: Nothing found at path");

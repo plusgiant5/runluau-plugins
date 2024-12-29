@@ -90,19 +90,19 @@ template<bool quotes_around_strings = false, bool colors = true> std::string bet
 			output += RESET;
 		int array_length = lua_objlen(thread, object_location);
 		bool multi_line = false;
-		if (array_length == 0) [[unlikely]] {
+		if (array_length == 0) {
 			multi_line = true;
 		}
 		bool has_hash = false;
-		if (array_length > 0) [[unlikely]] {
-			if (lua_rawiter(thread, object_location, array_length) >= 0) [[unlikely]] {
+		if (array_length > 0) {
+			if (lua_rawiter(thread, object_location, array_length) >= 0) {
 				lua_pop(thread, 2);
 				multi_line = true;
 			}
 		}
-		if (multi_line) [[likely]] {
+		if (multi_line) {
 			new_indent += '\t';
-			if (array_length > 0) [[unlikely]] {
+			if (array_length > 0) {
 				output += '\n';
 				output += new_indent;
 			}
@@ -111,9 +111,9 @@ template<bool quotes_around_strings = false, bool colors = true> std::string bet
 		bool last_was_array = false;
 		for (int index = 0; index = lua_rawiter(thread, object_location, index), index >= 0;) {
 			empty = false;
-			if (index <= array_length) [[unlikely]] {
+			if (index <= array_length) {
 				output += bettertostring<true, colors>(thread, -1, new_indent, encountered, depth + 1);
-				if (index == array_length) [[unlikely]] {
+				if (index == array_length) {
 					if (multi_line) {
 						if (colors)
 							output += TABLE_COLOR;
@@ -132,12 +132,12 @@ template<bool quotes_around_strings = false, bool colors = true> std::string bet
 				output += '\n';
 				output += new_indent;
 				bool did_name_key = false;
-				if (lua_type(thread, -2) == LUA_TSTRING) [[likely]] {
+				if (lua_type(thread, -2) == LUA_TSTRING) {
 					size_t key_length;
 					const char* key_content = luaL_tolstring(thread, -2, &key_length);
 					lua_pop(thread, 1);
 					std::string key = std::string(key_content, key_length);
-					if (is_valid_name(key)) [[likely]] {
+					if (is_valid_name(key)) {
 						output += key;
 						if (colors)
 							output += TABLE_COLOR;
@@ -147,7 +147,7 @@ template<bool quotes_around_strings = false, bool colors = true> std::string bet
 						did_name_key = true;
 					}
 				}
-				if (!did_name_key) [[unlikely]] {
+				if (!did_name_key) {
 					if (colors)
 						output += TABLE_COLOR;
 					output += '[';
@@ -169,7 +169,7 @@ template<bool quotes_around_strings = false, bool colors = true> std::string bet
 			}
 			lua_pop(thread, 2);
 		}
-		if (empty || !multi_line) [[unlikely]] {
+		if (empty || !multi_line) {
 			if (colors)
 				output += TABLE_COLOR;
 			output += '}';
@@ -187,9 +187,9 @@ template<bool quotes_around_strings = false, bool colors = true> std::string bet
 	}
 	case LUA_TFUNCTION:
 		lua_Debug info;
-		if (lua_getinfo(thread, object_location, "sln", &info)) [[likely]] {
+		if (lua_getinfo(thread, object_location, "sln", &info)) {
 			std::string func_name;
-			if (info.name) [[unlikely]] {
+			if (info.name) {
 				func_name = info.name;
 			} else {
 				std::stringstream address;

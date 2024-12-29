@@ -64,7 +64,7 @@ std::optional<window_data*> get_window_data(void* frame_buffer) {
 	return window_frame_buffer_to_data.at(frame_buffer);
 }
 window_data* expect_window_data(std::optional<window_data*> data) {
-	if (!data.has_value()) [[unlikely]] {
+	if (!data.has_value()) {
 		throw "Window data not found!";
 	}
 	return data.value();
