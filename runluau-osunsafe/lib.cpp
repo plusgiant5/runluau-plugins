@@ -76,7 +76,7 @@ int setenv(lua_State* thread) {
 
 #define reg(name) lua_pushcfunction(thread, name, #name); lua_setfield(thread, -2, #name)
 extern "C" __declspec(dllexport) void register_library(lua_State* thread) {
-	lua_createtable(thread, 0, 0);
+	lua_newtable(thread);
 	reg(execute);
 	reg(capture);
 	reg(getenv);

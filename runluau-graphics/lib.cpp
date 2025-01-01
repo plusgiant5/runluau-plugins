@@ -198,7 +198,7 @@ void create_window_thread(lua_State* thread, yield_ready_event_t yield_ready_eve
 	int width = luaL_checkinteger(thread, 1);
 	int height = luaL_checkinteger(thread, 2);
 	const char* title = luaL_optstring(thread, 3, "Window");
-	double pixel_size = luaL_optnumber(thread, 4, 1);
+	unsigned int pixel_size = luaL_optunsigned(thread, 4, 1);
 
 	int win_width = width * pixel_size;
 	int win_height = height * pixel_size;
