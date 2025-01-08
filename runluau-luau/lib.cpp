@@ -73,6 +73,7 @@ void push_ast(lua_State* thread, const simdjson::dom::element& element) {
 	switch (element.type()) {
 	case simdjson::dom::element_type::OBJECT:
 		lua_newtable(thread);
+		stack_slots_needed(2);
 		for (auto [key, value] : element.get_object()) {
 			lua_pushlstring(thread, key.data(), key.size());
 			push_ast(thread, value);
@@ -82,6 +83,7 @@ void push_ast(lua_State* thread, const simdjson::dom::element& element) {
 	case simdjson::dom::element_type::ARRAY:
 	{
 		lua_newtable(thread);
+		stack_slots_needed(2);
 		const auto& arr = element.get_array();
 		for (size_t i = 0; i < arr.size(); ++i) {
 			push_size_t(thread, i + 1);
@@ -199,21 +201,27 @@ bool push_parseresult(lua_State* thread, Luau::ParseResult parsed) {
 		lua_settable(thread, -3);
 	}
 	lua_setfield(thread, -2, "errors");
-	std::string ast_json = Luau::toJson(parsed.root, parsed.commentLocations);
-	ast_json = replace_outside_quotes(ast_json, "-Infinity", "\"-Infinity\"");
-	ast_json = replace_outside_quotes(ast_json, "Infinity", "\"Infinity\"");
-	ast_json = replace_outside_quotes(ast_json, "NaN", "\"NaN\"");
-	set_string(thread, ast_json, "ast_json");
-	simdjson::dom::parser parser;
-	simdjson::dom::element ast;
-	simdjson::error_code error = parser.parse(ast_json).get(ast);
-	if (error) {
-		lua_pushfstring(thread, "Failed to parse Luau's JSON: %s", simdjson::error_message(error));
-		lua_error(thread);
-		return false;
+	if (parsed.root) {
+		std::string ast_json = Luau::toJson(parsed.root, parsed.commentLocations);
+		ast_json = replace_outside_quotes(ast_json, "-Infinity", "\"-Infinity\"");
+		ast_json = replace_outside_quotes(ast_json, "Infinity", "\"Infinity\"");
+		ast_json = replace_outside_quotes(ast_json, "NaN", "\"NaN\"");
+		set_string(thread, ast_json, "ast_json");
+		simdjson::dom::parser parser;
+		simdjson::dom::element ast;
+		simdjson::error_code error = parser.parse(ast_json).get(ast);
+		if (error) {
+			lua_pushfstring(thread, "Failed to parse Luau's JSON: %s", simdjson::error_message(error));
+			lua_error(thread);
+			return false;
+		}
+		push_ast(thread, ast);
+		lua_setfield(thread, -2, "ast");
+	} else {
+		set_string(thread, "{}", "ast_json");
+		lua_newtable(thread);
+		lua_setfield(thread, -2, "ast");
 	}
-	push_ast(thread, ast);
-	lua_setfield(thread, -2, "ast");
 	return true;
 }
 int parse(lua_State* thread) {
