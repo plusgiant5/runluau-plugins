@@ -2,6 +2,7 @@
 
 int compile(lua_State* thread) {
 	wanted_arg_count(1);
+	stack_slots_needed(1);
 	std::string source = luau::checkstring(thread, 1);
 	Luau::CompileOptions options;
 	options.optimizationLevel = 1;
@@ -68,6 +69,7 @@ inline void set_location(lua_State* thread, Luau::Location location, const char*
 	set_string(thread, position_to_string(location.begin) + " - " + position_to_string(location.end), field);
 }
 void push_ast(lua_State* thread, const simdjson::dom::element& element) {
+	stack_slots_needed(1);
 	switch (element.type()) {
 	case simdjson::dom::element_type::OBJECT:
 		lua_newtable(thread);
@@ -172,6 +174,7 @@ std::string replace_outside_quotes(
 	return result;
 }
 bool push_parseresult(lua_State* thread, Luau::ParseResult parsed) {
+	stack_slots_needed(7);
 	lua_newtable(thread);
 
 	set_number(thread, parsed.lines, "lines");
@@ -215,6 +218,7 @@ bool push_parseresult(lua_State* thread, Luau::ParseResult parsed) {
 }
 int parse(lua_State* thread) {
 	wanted_arg_count(1);
+	stack_slots_needed(1);
 	size_t len;
 	const char* source = luaL_checklstring(thread, 1, &len);
 	Luau::ParseOptions options;

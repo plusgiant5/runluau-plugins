@@ -2,6 +2,7 @@
 
 int read_file(lua_State* thread) {
 	wanted_arg_count(1);
+	stack_slots_needed(1);
 	size_t length;
 	const char* path_c_str = luaL_checklstring(thread, 1, &length);
 	fs::path path(std::string(path_c_str, length));
@@ -20,6 +21,7 @@ int read_file(lua_State* thread) {
 
 int write_file(lua_State* thread) {
 	wanted_arg_count(2);
+	stack_slots_needed(1);
 	size_t path_length;
 	const char* path_c_str = luaL_checklstring(thread, 1, &path_length);
 	fs::path path(std::string(path_c_str, path_length));
@@ -38,6 +40,7 @@ int write_file(lua_State* thread) {
 
 int append_file(lua_State* thread) {
 	wanted_arg_count(2);
+	stack_slots_needed(1);
 	size_t path_length;
 	const char* path_c_str = luaL_checklstring(thread, 1, &path_length);
 	fs::path path(std::string(path_c_str, path_length));
@@ -56,24 +59,28 @@ int append_file(lua_State* thread) {
 
 int exists(lua_State* thread) {
 	wanted_arg_count(1);
+	stack_slots_needed(1);
 	lua_pushboolean(thread, fs::exists(fs::path(luaL_checkstring(thread, 1))));
 	return 1;
 }
 
 int is_file(lua_State* thread) {
 	wanted_arg_count(1);
+	stack_slots_needed(1);
 	lua_pushboolean(thread, fs::is_regular_file(fs::path(luaL_checkstring(thread, 1))));
 	return 1;
 }
 
 int is_folder(lua_State* thread) {
 	wanted_arg_count(1);
+	stack_slots_needed(1);
 	lua_pushboolean(thread, fs::is_directory(fs::path(luaL_checkstring(thread, 1))));
 	return 1;
 }
 
 int list(lua_State* thread) {
 	wanted_arg_count(1);
+	stack_slots_needed(3);
 	fs::path path(luaL_checkstring(thread, 1));
 	if (!fs::is_directory(path)) {
 		if (fs::exists(path)) {
@@ -97,6 +104,7 @@ int list(lua_State* thread) {
 
 int new_folder(lua_State* thread) {
 	wanted_arg_count(1);
+	stack_slots_needed(1);
 	size_t path_length;
 	const char* path_c_str = luaL_checklstring(thread, 1, &path_length);
 	fs::path path(std::string(path_c_str, path_length));
@@ -110,6 +118,7 @@ int new_folder(lua_State* thread) {
 
 int delete_file(lua_State* thread) {
 	wanted_arg_count(1);
+	stack_slots_needed(1);
 	size_t path_length;
 	const char* path_c_str = luaL_checklstring(thread, 1, &path_length);
 	fs::path path(std::string(path_c_str, path_length));
@@ -123,6 +132,7 @@ int delete_file(lua_State* thread) {
 
 int delete_folder(lua_State* thread) {
 	wanted_arg_count(1);
+	stack_slots_needed(1);
 	size_t path_length;
 	const char* path_c_str = luaL_checklstring(thread, 1, &path_length);
 	fs::path path(std::string(path_c_str, path_length));

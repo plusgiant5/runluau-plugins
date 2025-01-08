@@ -255,18 +255,21 @@ void create_window_thread(lua_State* thread, yield_ready_event_t yield_ready_eve
 }
 int create_window(lua_State* thread) {
 	wanted_arg_count(2);
+	stack_slots_needed(1);
 	create_windows_thread_for_luau(thread, create_window_thread);
 	return lua_yield(thread, 1);
 }
 
 int window_exists(lua_State* thread) {
 	wanted_arg_count(1);
+	stack_slots_needed(1);
 	lua_pushboolean(thread, get_window_data(luaL_checkbuffer(thread, 1, nullptr)).has_value());
 	return 1;
 }
 
 int get_window_events(lua_State* thread) {
 	wanted_arg_count(1);
+	stack_slots_needed(7);
 	window_data* data = to_window_data(thread, 1);
 	auto& events = data->events;
 	lua_createtable(thread, (int)events->size(), 0);
@@ -323,6 +326,7 @@ void SetWindowSize(HWND hwnd, int width, int height) {
 }
 int set_window_size(lua_State* thread) {
 	wanted_arg_count(3);
+	stack_slots_needed(1);
 	window_data* data = to_window_data(thread, 1);
 	int width = luaL_checkinteger(thread, 2);
 	int height = luaL_checkinteger(thread, 3);

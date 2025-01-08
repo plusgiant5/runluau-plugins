@@ -59,6 +59,7 @@ int spawn(lua_State* thread) {
 	wanted_arg_count(1);
 	luaL_checktype(thread, 1, LUA_TFUNCTION);
 	int arg_count = lua_gettop(thread) - 1;
+	stack_slots_needed(arg_count + 2);
 	lua_State* new_thread = luau::create_thread(thread);
 	lua_pushvalue(thread, 1);
 	lua_xmove(thread, new_thread, 1);
@@ -77,6 +78,7 @@ int defer(lua_State* thread) {
 	wanted_arg_count(1);
 	luaL_checktype(thread, 1, LUA_TFUNCTION);
 	int arg_count = lua_gettop(thread) - 1;
+	stack_slots_needed(arg_count + 2);
 	lua_State* new_thread = luau::create_thread(thread);
 	lua_pushvalue(thread, 1);
 	lua_xmove(thread, new_thread, 1);
@@ -108,6 +110,7 @@ int delay(lua_State* thread) {
 	wanted_arg_count(2);
 	luaL_checktype(thread, 2, LUA_TFUNCTION);
 	int arg_count = lua_gettop(thread);
+	stack_slots_needed(arg_count + 2);
 	lua_State* new_thread = luau::create_thread(thread);
 	for (int i = 1; i <= arg_count; i++) {
 		lua_pushvalue(thread, i);
@@ -122,6 +125,7 @@ int delay(lua_State* thread) {
 
 int cancel(lua_State* thread) {
 	wanted_arg_count(1);
+	stack_slots_needed(0);
 	lua_State* target = lua_tothread(thread, 1);
 	luaL_argexpected(thread, target, 1, "thread");
 	lua_resetthread(target);
