@@ -118,7 +118,7 @@ int setenv(lua_State* thread) {
 }
 
 int getclipboard(lua_State* thread) {
-	wanted_arg_count(1);
+	wanted_arg_count(0);
 	stack_slots_needed(1);
 
 	if (!OpenClipboard(nullptr)) {
