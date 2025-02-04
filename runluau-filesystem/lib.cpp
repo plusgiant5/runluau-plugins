@@ -323,9 +323,4 @@ constexpr luaL_Reg library[] = {
 extern "C" __declspec(dllexport) void register_library(lua_State* thread) {
     luaL_register(thread, "fs", library);
     is_unsafe = luau::is_plugin_loaded("runluau-osunsafe.dll");
-    if (is_unsafe) {
-        puts("Using unsafe filesystem\n");
-    } else {
-        puts("Using safe filesystem\n");
-    }
 }
