@@ -105,7 +105,10 @@ int write_file(lua_State* thread) {
     size_t content_length;
     const char* content = luaL_checklstring(thread, 2, &content_length);
 
-	fs::create_directories(path.parent_path());
+	fs::path parent = path.parent_path();
+	if (!parent.empty() && parent != path) {
+		fs::create_directories(path.parent_path());
+	}
 
     if (fs::is_directory(path)) {
         lua_pushstring(thread, "Path is a directory, cannot open as a file");
