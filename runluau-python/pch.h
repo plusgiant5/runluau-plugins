@@ -1,7 +1,12 @@
+#include <string>
+#include <vector>
+#include <map>
+#include <unordered_map>
+#include <mutex>
+#include <memory>
+#include <stdexcept>
+#include <iostream>
+#include <sstream>
 
-#ifndef PCH_H
-#define PCH_H
-
-#include "framework.h"
-
-#endif // PCH_H
+#include <Python.h>
+#include <lua.h>
