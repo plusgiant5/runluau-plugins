@@ -30,7 +30,7 @@ int warn(lua_State* thread) {
 	return 0;
 }
 
-int better_tostring(lua_State* thread) {
+int tostringex(lua_State* thread) {
 	if (lua_gettop(thread) == 0) {
 		lua_pushstring(thread, "nil");
 		return 1;
@@ -45,7 +45,7 @@ int better_tostring(lua_State* thread) {
 constexpr luaL_Reg library[] = {
 	reg(print),
 	reg(warn),
-	reg(better_tostring),
+	reg(tostringex),
 	{NULL, NULL}
 };
 extern "C" __declspec(dllexport) void register_library(lua_State* thread) {
